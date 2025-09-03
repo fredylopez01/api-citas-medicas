@@ -2,6 +2,11 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 
+const fs = require("fs");
+const path = require("path");
+const { error } = require("console");
+const usersFilePath = path.join(__dirname, "users.json");
+
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -52,6 +57,18 @@ app.post("/api/data", (req, res) => {
   res.status(201).json({
     message: "Información recibida",
     data,
+  });
+});
+
+app.get("/users", (req, res) => {
+  fs.readFile(usersFilePath, "utf-8", (error, data) => {
+    if (error) {
+      return res
+        .status(404)
+        .json({ errorText: "Error no se pudo recuperar los datos" });
+    }
+    const users = JSON.parse(data);
+    res.status(200).json(users);
   });
 });
 

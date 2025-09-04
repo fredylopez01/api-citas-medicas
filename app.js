@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 
 const fs = require("fs");
 const path = require("path");
-const { error } = require("console");
 const usersFilePath = path.join(__dirname, "users.json");
 
 const app = express();
@@ -52,7 +51,7 @@ app.post("/api/data", (req, res) => {
   const data = req.body;
 
   if (!data || Object.keys(data).length == 0) {
-    return res.status(400).json({ error: "No se recibieron datos" });
+    return res.status(400).json({ message: "No se recibieron datos" });
   }
   res.status(201).json({
     message: "Información recibida",
@@ -61,11 +60,11 @@ app.post("/api/data", (req, res) => {
 });
 
 app.get("/users", (req, res) => {
-  fs.readFile(usersFilePath, "utf-8", (error, data) => {
-    if (error) {
+  fs.readFile(usersFilePath, "utf-8", (err, data) => {
+    if (err) {
       return res
         .status(404)
-        .json({ errorText: "Error no se pudo recuperar los datos" });
+        .json({ message: "Error no se pudo recuperar los datos" });
     }
     const users = JSON.parse(data);
     res.status(200).json(users);
@@ -74,19 +73,39 @@ app.get("/users", (req, res) => {
 
 app.post("/users", (req, res) => {
   const newUser = req.body;
-  fs.readFile(usersFilePath, "utf-8", (error, data) => {
-    if (error) {
-      return res.status(500).json({ errorText: "Error con conexión de datos" });
+  fs.readFile(usersFilePath, "utf-8", (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: "Error con conexión de datos" });
     }
     const users = JSON.parse(data);
     users.push(newUser);
-    fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (error) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ errorText: "Error con conexión de datos" });
+    fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error con conexión de datos" });
       } else {
         res.status(201).json({ newUser });
+      }
+    });
+  });
+});
+
+app.put("/users/:id", (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  const updatedUser = req.body;
+
+  fs.readFile(usersFilePath, "utf-8", (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: "Error con conexión de datos" });
+    }
+    let users = JSON.parse(data);
+    users = users.map((user) =>
+      user.id === userId ? { ...user, ...updatedUser } : user
+    );
+    fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error con conexión de datos" });
+      } else {
+        res.json({ updatedUser });
       }
     });
   });

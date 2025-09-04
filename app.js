@@ -72,6 +72,26 @@ app.get("/users", (req, res) => {
   });
 });
 
+app.post("/users", (req, res) => {
+  const newUser = req.body;
+  fs.readFile(usersFilePath, "utf-8", (error, data) => {
+    if (error) {
+      return res.status(500).json({ errorText: "Error con conexión de datos" });
+    }
+    const users = JSON.parse(data);
+    users.push(newUser);
+    fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (error) => {
+      if (error) {
+        return res
+          .status(500)
+          .json({ errorText: "Error con conexión de datos" });
+      } else {
+        res.status(201).json({ newUser });
+      }
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`API running: http://localhost:${PORT}`);
 });

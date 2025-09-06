@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 
+const { validateUser } = require("./utils/validation");
+
 const fs = require("fs");
 const path = require("path");
 const usersFilePath = path.join(__dirname, "users.json");
@@ -78,12 +80,18 @@ app.post("/users", (req, res) => {
       return res.status(500).json({ message: "Error con conexión de datos" });
     }
     const users = JSON.parse(data);
+
+    const validation = validateUser(newUser, users);
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.error });
+    }
+
     users.push(newUser);
     fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (err) => {
       if (err) {
         return res.status(500).json({ message: "Error con conexión de datos" });
       } else {
-        res.status(201).json({ newUser });
+        res.status(201).json(newUser);
       }
     });
   });
@@ -98,6 +106,12 @@ app.put("/users/:id", (req, res) => {
       return res.status(500).json({ message: "Error con conexión de datos" });
     }
     let users = JSON.parse(data);
+
+    const validation = validateUser(updatedUser, users, userId);
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.error });
+    }
+
     users = users.map((user) =>
       user.id === userId ? { ...user, ...updatedUser } : user
     );
@@ -106,6 +120,24 @@ app.put("/users/:id", (req, res) => {
         return res.status(500).json({ message: "Error con conexión de datos" });
       } else {
         res.json({ updatedUser });
+      }
+    });
+  });
+});
+
+app.delete("/users/:id", (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  fs.readFile(usersFilePath, "utf-8", (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: "Error con conexión de datos" });
+    }
+    let users = JSON.parse(data);
+    users = users.filter((user) => user.id !== userId);
+    fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error con conexión de datos" });
+      } else {
+        res.status(204).send();
       }
     });
   });
